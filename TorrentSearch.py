@@ -155,7 +155,8 @@ def SearchPirateBay(search_str):
 
 def SearchExtraTorrent(search_str):
     search_words = search_str.split(sep=" ")
-    search_str = "http://extratorrent.cc/rss.xml?type=search&search={:s}".format(search_str.replace(" ", "+"))
+    #search_str = "http://extratorrent.cc/rss.xml?type=search&search={:s}".format(search_str.replace(" ", "+"))
+    search_str = "http://extra.to/rss.xml?type=search&search={:s}".format(search_str.replace(" ", "+"))
     print("Searching in ExtraTorrent.cc -> {:s}".format(search_str))
 
     root = etree.XML(requests.get(search_str).content)
@@ -180,7 +181,7 @@ def SearchExtraTorrent(search_str):
             print("SearchExtraTorrent Exception: {:s}".format(str(ex)))
 
 
-
+#Not Working... website relies on javascript to construct the magnet link
 def SearchZooqle(search_str):
     search_words = search_str.split(sep=" ")
     search_str = "https://zooqle.com/search?q={:s}&s=dt&v=t&sd=d&fmt=rss".format(search_str.replace(" ", "%20"))
@@ -244,10 +245,24 @@ def SearchMonoNova(search_str):
     print("Searching in MonoNova.org -> {:s}".format(search_str))
 
     def get_torrent_details(link):
+        magnet_node = None
+        details_node = None
+        torrent_node = None
+
         root = html.fromstring(requests.get(link).content)
-        torrent_node =  root.xpath('//a[@id="download-file"]')[0]
-        magnet_node = root.xpath('//a[@id="download-magnet"]')[0]
-        details_node = root.xpath('//table[@class="general-table"]/tbody')[0]
+        res = root.xpath('//a[@id="download-file"]')
+        if len(res) != 0:
+            magnet_node = res[0].get("href")
+        else:
+            raise Exception("Magnet does not exist.")
+
+        res = root.xpath('//a[@id="download-magnet"]')
+        if len(res) != 0:
+            torrent_node = res[0].get("href")
+
+        res = root.xpath('//table[@class="general-table"]/tbody')
+        if len(res) != 0:
+            details_node = res[0]
 
         date = None
         for tr_node in details_node.xpath('.//tr'):
@@ -258,10 +273,10 @@ def SearchMonoNova(search_str):
         #exit(0)
 
         torrent_details = {
-            "torrent_link": torrent_node.get("href"),
-            "magnet_link": magnet_node.get("href"),
+            "torrent_link": torrent_node,
+            "magnet_link": magnet_node,
             "date": date,
-            "hash": re.findall(magnet_md5_hash_re, magnet_node.get('href').upper())[0],
+            "hash": re.findall(magnet_md5_hash_re, magnet_node.upper())[0],
         }
         return torrent_details
 
@@ -404,6 +419,36 @@ def SearchBittorrent_am(search_str):
 #             print("SearchTorrentProject_se Exception: {:s}".format(str(ex)))
 
 
+
+def SearchSkyTorrents_in(search_str):
+    search_words = search_str.split(sep=" ")
+    search_str = "https://www.skytorrents.in/search/all/ad/1/?l=en-us&q={:s}".format(search_str.replace(" ", "+"))
+    print("Searching in SkyTorrents.in -> {:s}".format(search_str))
+
+    root = html.fromstring(requests.get(search_str).content)
+    #print(etree.tostring(root, pretty_print=True).decode())
+    for row in root.xpath('//table[@class="table is-striped table is-narrow"]/tbody/tr'):
+        try:
+            #print(etree.tostring(row, pretty_print=True).decode())
+            res = row.xpath('./td')
+            mgnet_node = res[0].xpath('./a[contains(@href,"magnet:")]')[0]
+            image_title_node = mgnet_node.xpath('./img')[0]
+            torrent_details = {
+                'title': image_title_node.get('title'),
+                "magnet_link": mgnet_node.get("href"),
+                "size": res[1].text,
+                "files": res[2].text,
+                "date": res[3].text,
+                "hash": re.findall(magnet_md5_hash_re, mgnet_node.get("href").upper())[0],
+                "seeders": int(res[4].text),
+                "leechers": int(res[5].text),
+            }
+            AddTorrentInfo("https://www.skytorrents.in", torrent_details)
+        except Exception as ex:
+            print("SearchBittorrent_am Exception: {:s}".format(str(ex)))
+
+
+
 if __name__ == '__main__':
     if (len(sys.argv) <= 1):
         print("Example: \n ./thisExec Stuff to Search")
@@ -411,14 +456,14 @@ if __name__ == '__main__':
 
     search_str = " ".join(sys.argv[1:])
     print("Search String: ", search_str)
-    active_sites = (SearchPirateBay, SearchExtraTorrent, SearchZooqle, SearchMonoNova, SearchLimeTorrents,
-                    SearchBittorrent_am)
-    #active_sites = (SearchTorrentProject_se,)
+    #active_sites = (SearchPirateBay, SearchExtraTorrent, SearchMonoNova, SearchLimeTorrents,
+    #                SearchBittorrent_am)
+    active_sites = (SearchSkyTorrents_in,)
     try:
         futs = []
         for site in active_sites:
             futs.append(process_pool.submit(site, search_str))
-        wait(futs)
+        wait(futs, timeout=30)
         for f in futs:
             f.cancel()
         for f in futs:
@@ -430,7 +475,7 @@ if __name__ == '__main__':
 
     for torrent_hash in torrents_found:
         print("#"*120)
-        print("Torrent Hash {:s}".format(torrent_hash))
+        print("Torrent Hash {}".format(torrent_hash))
         magnet_links = []
         for location in torrents_found[torrent_hash]["locations"]:
             magnet_links.append(location['magnet_link'])
@@ -439,6 +484,6 @@ if __name__ == '__main__':
         for location in torrents_found[torrent_hash]["locations"]:
             print("  website: {}".format(location["website"]))
             for key in (print_order - dont_print):
-                print("    {:s}: {}".format(key, location[key]))
+                print("    {}: {}".format(key, location[key]))
         print("")
     exit(0)
