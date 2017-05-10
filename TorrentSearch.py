@@ -7,6 +7,7 @@ from lxml import etree
 import re
 import os
 import sys
+import signal
 
 from MagnetParser import MergeMagnetLinks
 
@@ -24,6 +25,33 @@ print_order = set(("website", "title", "date", "seeders", "leechers", "magnet_li
 
 #Don't print these Info Fields in the end
 dont_print = set(("website", "hash", "torrent_link", "magnet_link"))
+
+
+
+
+def handler(signum, frame):
+    PrintAllInfo()
+    print("Operation Canceled by user")
+    exit()
+
+signal.signal(signal.SIGINT, handler)
+signal.signal(signal.SIGTERM, handler)
+
+
+def PrintAllInfo():
+    for torrent_hash in torrents_found:
+        print("#"*120)
+        print("Torrent Hash {}".format(torrent_hash))
+        magnet_links = []
+        for location in torrents_found[torrent_hash]["locations"]:
+            magnet_links.append(location['magnet_link'])
+        merged_magnet_link = MergeMagnetLinks(search_str, magnet_links)
+        print("  Merged Magnet: {}".format(merged_magnet_link))
+        for location in torrents_found[torrent_hash]["locations"]:
+            print("  website: {}".format(location["website"]))
+            for key in (print_order - dont_print):
+                print("    {}: {}".format(key, location[key]))
+        print("")
 
 
 def CheckWordsInTitle(title, words):
@@ -433,8 +461,11 @@ def SearchSkyTorrents_in(search_str):
             res = row.xpath('./td')
             mgnet_node = res[0].xpath('./a[contains(@href,"magnet:")]')[0]
             image_title_node = mgnet_node.xpath('./img')[0]
+            torrent_title = image_title_node.get('title')
+            if not CheckWordsInTitle(torrent_title, search_words):
+                continue
             torrent_details = {
-                'title': image_title_node.get('title'),
+                'title': torrent_title,
                 "magnet_link": mgnet_node.get("href"),
                 "size": res[1].text,
                 "files": res[2].text,
@@ -456,9 +487,9 @@ if __name__ == '__main__':
 
     search_str = " ".join(sys.argv[1:])
     print("Search String: ", search_str)
-    #active_sites = (SearchPirateBay, SearchExtraTorrent, SearchMonoNova, SearchLimeTorrents,
-    #                SearchBittorrent_am)
-    active_sites = (SearchSkyTorrents_in,)
+    active_sites = (SearchPirateBay, SearchExtraTorrent, SearchMonoNova, SearchLimeTorrents,
+                    SearchBittorrent_am, SearchSkyTorrents_in)
+    #active_sites = (SearchSkyTorrents_in,)
     try:
         futs = []
         for site in active_sites:
@@ -473,17 +504,5 @@ if __name__ == '__main__':
         print("Exception: ", str(ex))
 
 
-    for torrent_hash in torrents_found:
-        print("#"*120)
-        print("Torrent Hash {}".format(torrent_hash))
-        magnet_links = []
-        for location in torrents_found[torrent_hash]["locations"]:
-            magnet_links.append(location['magnet_link'])
-        merged_magnet_link = MergeMagnetLinks(search_str, magnet_links)
-        print("  Merged Magnet: {}".format(merged_magnet_link))
-        for location in torrents_found[torrent_hash]["locations"]:
-            print("  website: {}".format(location["website"]))
-            for key in (print_order - dont_print):
-                print("    {}: {}".format(key, location[key]))
-        print("")
+    PrintAllInfo()
     exit(0)
