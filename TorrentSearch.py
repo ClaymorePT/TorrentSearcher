@@ -163,7 +163,7 @@ def SearchPirateBay(search_str):
             site_node = node.xpath('./td[@class="site"]/a')[0]
             status_node = node.xpath('./td[@class="status"]/img')[0]
             speed_node = node.xpath('./td[@class="speed"]')[0]
-            (site_node.text, site_node.get('href'), status_node.get('alt'), speed_node.text)
+            #(site_node.text, site_node.get('href'), status_node.get('alt'), speed_node.text)
             piratebay_proxys.append({"site": site_node.text,
                                      "proxy_link": site_node.get('href'),
                                      "status": True if status_node.get('alt') == 'up' else False,

@@ -49,13 +49,14 @@ def MergeMagnetLinks(new_magnet_name, magnet_link_list):
     assert type(new_magnet_name) is str, "magnet_link is not str"
     assert len(new_magnet_name) is not 0, "new_magnet_name is empty"
 
-    assert not sum((magnet_link[0:8] != "magnet:?" for magnet_link in magnet_link_list)), \
-        "magnet_link_list seems to contain invalid magnet links. Links which do not start with 'magnet:?'"
+    #assert not sum((magnet_link[0:8] != "magnet:?" for magnet_link in magnet_link_list)), \
+    #    "magnet_link_list seems to contain invalid magnet links. Links which do not start with 'magnet:?'"
 
     xt = None
     tr = set()
     for magnet_link in magnet_link_list:
-
+        if magnet_link[0:8] != "magnet:?":
+            continue
         magnet_details = ParseMagnetLink(parse.unquote(magnet_link.replace("&amp;", "&")))
         for detail in magnet_details:
             if detail == 'xt':
