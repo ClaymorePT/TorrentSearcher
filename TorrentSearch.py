@@ -121,7 +121,9 @@ def SearchPirateBay(search_str):
 
     #Gets the torrent details
     def get_torrent_details(proxy_link, torrent_link):
-        torrent_link = 'https://{:s}{:s}'.format(proxy_link, torrent_link)
+        if 'https://' not in torrent_link:
+          torrent_link = 'https://{:s}{:s}'.format(proxy_link, torrent_link)
+        print(torrent_link)
         details_node = html.fromstring(requests.get(torrent_link).content).xpath('//div[@id="details"]')[0]
         magnet_node = details_node.xpath('//div[@class="download"]/a')[0]
         dl_col2 = list(details_node.xpath('//dl[@class="col2"]')[0])
@@ -159,7 +161,7 @@ def SearchPirateBay(search_str):
         root = html.fromstring(requests.get(proxybay_url).content)
         #print(etree.tostring(root, pretty_print=True).decode())
         pendent = []
-        for node in root.xpath('//table[@id="searchResult"]/tr'):
+        for node in root.xpath('//table[@id="proxyList"]/tr'):
             site_node = node.xpath('./td[@class="site"]/a')[0]
             status_node = node.xpath('./td[@class="status"]/img')[0]
             speed_node = node.xpath('./td[@class="speed"]')[0]
@@ -279,6 +281,7 @@ def SearchMonoNova(search_str):
 
         root = html.fromstring(requests.get(link).content)
         res = root.xpath('//a[@id="download-file"]')
+        #print(etree.tostring(res, pretty_print=True).decode())
         if len(res) != 0:
             magnet_node = res[0].get("href")
         else:
@@ -314,6 +317,8 @@ def SearchMonoNova(search_str):
         try:
             #print(etree.tostring(node, pretty_print=True).decode())
             torrent_title = node.text
+            #print("link:", node.get('href'))
+            #print("node.text:", node.text)
             if not CheckWordsInTitle(torrent_title, search_words):
                 continue
             link = node.get('href')
@@ -487,9 +492,9 @@ if __name__ == '__main__':
 
     search_str = " ".join(sys.argv[1:])
     print("Search String: ", search_str)
-    active_sites = (SearchPirateBay, SearchMonoNova, SearchLimeTorrents,
-                    SearchBittorrent_am, SearchSkyTorrents_in)
-    #active_sites = (SearchSkyTorrents_in,)
+    active_sites = (SearchPirateBay, SearchBittorrent_am, SearchLimeTorrents)
+    # SearchZooqle, SearchMonoNova, SearchLimeTorrents SearchSkyTorrents_in
+    #active_sites = (SearchMonoNova,)
     try:
         futs = []
         for site in active_sites:
