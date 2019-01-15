@@ -183,32 +183,31 @@ def SearchPirateBay(search_str):
 
 
 # Extratorrent went offline on the 17th of May of 2017
-# def SearchExtraTorrent(search_str):
-#     search_words = search_str.split(sep=" ")
-#     #search_str = "http://extratorrent.cc/rss.xml?type=search&search={:s}".format(search_str.replace(" ", "+"))
-#     search_str = "http://extra.to/rss.xml?type=search&search={:s}".format(search_str.replace(" ", "+"))
-#     print("Searching in ExtraTorrent.cc -> {:s}".format(search_str))
-
-#     root = etree.XML(requests.get(search_str).content)
-#     # print(etree.tostring(root, pretty_print=True).decode())
-#     for node in root.findall('.//item'):
-#         try:
-#             #print(etree.tostring(node, pretty_print=True).decode())
-#             torrent_title = node.find('title').text
-#             if not CheckWordsInTitle(torrent_title, search_words):
-#                 continue
-#             torrent_details = {
-#                 "title": torrent_title,
-#                 "date" : node.find('pubDate').text,
-#                 "torrent_link": node.find('enclosure').get('url'),
-#                 "magnet_link": node.find('magnetURI').text,
-#                 "seeders": node.find('seeders').text,
-#                 "leechers": node.find('leechers').text,
-#                 "hash": node.find('info_hash').text.upper()
-#             }
-#             AddTorrentInfo("http://extratorrent.cc", torrent_details)
-#         except Exception as ex:
-#             print("SearchExtraTorrent Exception: {:s}".format(str(ex)))
+def SearchExtraTorrent(search_str):
+    search_words = search_str.split(sep=" ")
+    #search_str = "http://extratorrent.cc/rss.xml?type=search&search={:s}".format(search_str.replace(" ", "+"))
+    search_str = "http://extra.to/rss.xml?type=search&search={:s}".format(search_str.replace(" ", "+"))
+    print("Searching in ExtraTorrent.cc -> {:s}".format(search_str))
+    root = etree.XML(requests.get(search_str).content)
+    # print(etree.tostring(root, pretty_print=True).decode())
+    for node in root.findall('.//item'):
+        try:
+            #print(etree.tostring(node, pretty_print=True).decode())
+            torrent_title = node.find('title').text
+            if not CheckWordsInTitle(torrent_title, search_words):
+                continue
+            torrent_details = {
+                "title": torrent_title,
+                "date" : node.find('pubDate').text,
+                "torrent_link": node.find('enclosure').get('url'),
+                "magnet_link": node.find('magnetURI').text,
+                "seeders": node.find('seeders').text,
+                "leechers": node.find('leechers').text,
+                "hash": node.find('info_hash').text.upper()
+            }
+            AddTorrentInfo("http://extratorrent.cc", torrent_details)
+        except Exception as ex:
+            print("SearchExtraTorrent Exception: {:s}".format(str(ex)))
 
 
 #Not Working... website relies on javascript to construct the magnet link
@@ -493,7 +492,7 @@ if __name__ == '__main__':
     search_str = " ".join(sys.argv[1:])
     print("Search String: ", search_str)
     active_sites = (SearchPirateBay, SearchBittorrent_am, SearchLimeTorrents)
-    # SearchZooqle, SearchMonoNova, SearchLimeTorrents SearchSkyTorrents_in
+    # SearchZooqle, SearchMonoNova, SearchLimeTorrents SearchSkyTorrents_in, SearchExtraTorrent
     #active_sites = (SearchMonoNova,)
     try:
         futs = []
