@@ -21,11 +21,15 @@ magnet_md5_hash_re = re.compile(r":([a-fA-F\d]{16,64})")
 
 
 #Print Order in the end
-print_order = set(("website", "title", "date", "seeders", "leechers", "magnet_link", "torrent_link"))
+print_order = set(("website", "title", "date", "seeders", "leechers", "magnet_link", "torrent_link", "age"))
 
 #Don't print these Info Fields in the end
 dont_print = set(("website", "hash", "torrent_link", "magnet_link"))
 
+# Requests User-Agent
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30',
+}
 
 
 
@@ -50,7 +54,8 @@ def PrintAllInfo():
         for location in torrents_found[torrent_hash]["locations"]:
             print("  website: {}".format(location["website"]))
             for key in (print_order - dont_print):
-                print("    {}: {}".format(key, location[key]))
+                if key in location and location[key] != None:
+                  print("    {}: {}".format(key, location[key]))
         print("")
 
 
@@ -124,7 +129,7 @@ def SearchPirateBay(search_str):
         if 'https://' not in torrent_link:
           torrent_link = 'https://{:s}{:s}'.format(proxy_link, torrent_link)
         print(torrent_link)
-        details_node = html.fromstring(requests.get(torrent_link).content).xpath('//div[@id="details"]')[0]
+        details_node = html.fromstring(requests.get(torrent_link, headers=headers).content).xpath('//div[@id="details"]')[0]
         magnet_node = details_node.xpath('//div[@class="download"]/a')[0]
         dl_col2 = list(details_node.xpath('//dl[@class="col2"]')[0])
 
@@ -142,7 +147,7 @@ def SearchPirateBay(search_str):
             search_words = search_str.split(sep=" ")
             search_str = "https://{:s}/search/{:s}/0/3/0".format(proxy_link, search_str.replace(" ", "%20"))
             print("Searching in PirateBay Proxy: {:s} -> {:s}".format(proxy_link, search_str))
-            tr_nodes = html.fromstring(requests.get(search_str).content).xpath(
+            tr_nodes = html.fromstring(requests.get(search_str, headers=headers).content).xpath(
                 '//div[@class="detName"]/a[@class="detLink"]')
             for torrent_node in tr_nodes:
                 try:
@@ -158,7 +163,7 @@ def SearchPirateBay(search_str):
                             "Reason: {:s}".format(proxy_link, str(ex)))
 
     try:
-        root = html.fromstring(requests.get(proxybay_url).content)
+        root = html.fromstring(requests.get(proxybay_url, headers=headers).content)
         #print(etree.tostring(root, pretty_print=True).decode())
         pendent = []
         for node in root.xpath('//table[@id="proxyList"]/tr'):
@@ -188,7 +193,7 @@ def SearchExtraTorrent(search_str):
     #search_str = "http://extratorrent.cc/rss.xml?type=search&search={:s}".format(search_str.replace(" ", "+"))
     search_str = "http://extra.to/rss.xml?type=search&search={:s}".format(search_str.replace(" ", "+"))
     print("Searching in ExtraTorrent.cc -> {:s}".format(search_str))
-    root = etree.XML(requests.get(search_str).content)
+    root = etree.XML(requests.get(search_str, headers=headers).content)
     # print(etree.tostring(root, pretty_print=True).decode())
     for node in root.findall('.//item'):
         try:
@@ -216,7 +221,7 @@ def SearchZooqle(search_str):
     search_str = "https://zooqle.com/search?q={:s}&s=dt&v=t&sd=d&fmt=rss".format(search_str.replace(" ", "%20"))
     print("Searching in Zooqle.com -> {:s}".format(search_str))
 
-    root = etree.XML(requests.get(search_str).content)
+    root = etree.XML(requests.get(search_str, headers=headers).content)
     # print(etree.tostring(root, pretty_print=True).decode())
     for node in root.findall('.//item'):
         try:
@@ -278,7 +283,7 @@ def SearchMonoNova(search_str):
         details_node = None
         torrent_node = None
 
-        root = html.fromstring(requests.get(link).content)
+        root = html.fromstring(requests.get(link, headers=headers).content)
         res = root.xpath('//a[@id="download-file"]')
         #print(etree.tostring(res, pretty_print=True).decode())
         if len(res) != 0:
@@ -310,7 +315,7 @@ def SearchMonoNova(search_str):
         }
         return torrent_details
 
-    root = html.fromstring(requests.get(search_str).content)
+    root = html.fromstring(requests.get(search_str, headers=headers).content)
     #print(etree.tostring(root, pretty_print=True).decode())
     for node in root.xpath('//td[@class="torrent_name"]/a'):
         try:
@@ -340,7 +345,7 @@ def SearchLimeTorrents(search_str):
     print("Searching in LimeTorrents.cc -> {:s}".format(search_str))
 
     def get_torrent_details(torrent_link):
-        root = html.fromstring(requests.get(torrent_link).content)
+        root = html.fromstring(requests.get(torrent_link, headers=headers).content)
         seeders_node = root.xpath('//span[@class="greenish"]')[0]
         leechers_node = root.xpath('//span[@class="reddish"]')[0]
         magnet_node = root.xpath('//a[contains(@href,"magnet:")]')[0]
@@ -351,7 +356,7 @@ def SearchLimeTorrents(search_str):
             "magnet_link": magnet_node.get('href'),
         }
 
-    root = etree.XML(requests.get(search_str).content)
+    root = etree.XML(requests.get(search_str, headers=headers).content)
     #print(etree.tostring(root, pretty_print=True).decode())
     for node in root.findall('.//item'):
         try:
@@ -381,7 +386,7 @@ def SearchBittorrent_am(search_str):
     print("Searching in bittorrent.am -> {:s}".format(search_str))
 
     def get_torrent_details(torrent_link):
-        root = html.fromstring(requests.get(torrent_link).content)
+        root = html.fromstring(requests.get(torrent_link, headers=headers).content)
         hash_node = root.xpath('//td[@class="table"]//tr[child::*[contains(text(), "Hash:")]]/td')[2]
         torrent_node = root.xpath('//td[@class="table"]//a[@id="torfile"]')[0]
         magnet_node = root.xpath('//td[@class="table"]//a[contains(@href, "magnet:")]')[0]
@@ -391,7 +396,7 @@ def SearchBittorrent_am(search_str):
             "magnet_link": magnet_node.get('href'),
         }
 
-    root = html.fromstring(requests.get(search_str).content)
+    root = html.fromstring(requests.get(search_str, headers=headers).content)
     #print(etree.tostring(root, pretty_print=True).decode())
     for node in root.xpath('//table[@class="torrentsTable"]/tr[@class="r"]/td/a[contains(@href,"download-torrent")]'):
         try:
@@ -457,7 +462,7 @@ def SearchSkyTorrents_in(search_str):
     search_str = "https://www.skytorrents.in/search/all/ad/1/?l=en-us&q={:s}".format(search_str.replace(" ", "+"))
     print("Searching in SkyTorrents.in -> {:s}".format(search_str))
 
-    root = html.fromstring(requests.get(search_str).content)
+    root = html.fromstring(requests.get(search_str, headers=headers).content)
     #print(etree.tostring(root, pretty_print=True).decode())
     for row in root.xpath('//table[@class="table is-striped table is-narrow"]/tbody/tr'):
         try:
@@ -483,6 +488,45 @@ def SearchSkyTorrents_in(search_str):
             print("SearchBittorrent_am Exception: {:s}".format(str(ex)))
 
 
+def SearchBTDig(search_str):
+    search_words = search_str.split(sep=" ")
+    search_str = "https://btdig.com/search?order=0&q={:s}".format(search_str.replace(" ", "+"))
+    print("Searching in BTDig.com -> {:s}".format(search_str))
+
+    def get_torrent_details(torrent_link):
+        root = html.fromstring(requests.get(torrent_link, headers=headers).content)
+        table_body_node = root.xpath('//table')[1]
+        magnet_node = table_body_node.xpath('./tr')[2].xpath('./td[2]/div/a')[0]
+        name_node = table_body_node.xpath('./tr')[3].xpath('./td[2]')[0]
+        size_node = table_body_node.xpath('./tr')[4].xpath('./td[2]')[0]
+        age_node = table_body_node.xpath('./tr')[5].xpath('./td[2]')[0]
+        files_node = table_body_node.xpath('./tr')[6].xpath('./td[2]')[0]
+
+        if not CheckWordsInTitle(name_node.text, search_words):
+            return None
+        return {
+          'title': name_node.text,
+          "magnet_link": magnet_node.get("href"),
+          "size": size_node.text,
+          "files": files_node.text,
+          "age": age_node.text,
+          "hash": re.findall(magnet_md5_hash_re, magnet_node.get("href").upper())[0],
+        }
+
+    root = html.fromstring(requests.get(search_str, headers=headers).content)
+    #print(etree.tostring(root, pretty_print=True).decode())
+    for row in root.xpath('//div[@class="one_result"]'):
+        try:
+            torrent_node = row.xpath('.//div[@class="torrent_name"]/a')[0]
+            #print(etree.tostring(torrent_node, pretty_print=True).decode())
+            torrent_link = torrent_node.get('href')
+            torrent_details = get_torrent_details(torrent_link)
+            if torrent_details:
+                AddTorrentInfo("https://btdig.com", torrent_details)
+
+        except Exception as ex:
+            print("SearchBTDig Exception: {:s}".format(str(ex)))
+
 
 if __name__ == '__main__':
     if (len(sys.argv) <= 1):
@@ -491,7 +535,7 @@ if __name__ == '__main__':
 
     search_str = " ".join(sys.argv[1:])
     print("Search String: ", search_str)
-    active_sites = (SearchPirateBay, SearchBittorrent_am, SearchLimeTorrents)
+    active_sites = (SearchPirateBay, SearchBittorrent_am, SearchLimeTorrents, SearchBTDig)
     # SearchZooqle, SearchMonoNova, SearchLimeTorrents SearchSkyTorrents_in, SearchExtraTorrent
     #active_sites = (SearchMonoNova,)
     try:
