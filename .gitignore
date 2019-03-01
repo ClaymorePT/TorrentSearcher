@@ -1,2 +1,11 @@
-/__pycache__
-/.idea
+# By default, ignore everything...
+/*
+
+# ... except these specific files
+!/.gitignore
+!/gpl-3.0.txt
+!/README.md
+!/requirements.txt
+!/setup.py
+!/MagnetParser.py
+!/TorrentSearch.py

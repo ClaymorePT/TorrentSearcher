@@ -31,32 +31,34 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/603.1.30 (KHTML, like Gecko) Version/10.1 Safari/603.1.30',
 }
 
-
+search_str = None
 
 def handler(signum, frame):
-    PrintAllInfo()
-    print("Operation Canceled by user")
-    exit()
+    if search_str:
+      PrintAllInfo()
+      print("Operation Canceled by user")
+      exit()
 
 signal.signal(signal.SIGINT, handler)
 signal.signal(signal.SIGTERM, handler)
 
 
 def PrintAllInfo():
-    for torrent_hash in torrents_found:
-        print("#"*120)
-        print("Torrent Hash {}".format(torrent_hash))
-        magnet_links = []
-        for location in torrents_found[torrent_hash]["locations"]:
-            magnet_links.append(location['magnet_link'])
-        merged_magnet_link = MergeMagnetLinks(search_str, magnet_links)
-        print("  Merged Magnet: {}".format(merged_magnet_link))
-        for location in torrents_found[torrent_hash]["locations"]:
-            print("  website: {}".format(location["website"]))
-            for key in (print_order - dont_print):
-                if key in location and location[key] != None:
-                  print("    {}: {}".format(key, location[key]))
-        print("")
+    if search_str:
+      for torrent_hash in torrents_found:
+          print("#"*120)
+          print("Torrent Hash {}".format(torrent_hash))
+          magnet_links = []
+          for location in torrents_found[torrent_hash]["locations"]:
+              magnet_links.append(location['magnet_link'])
+          merged_magnet_link = MergeMagnetLinks(search_str, magnet_links)
+          print("  Merged Magnet: {}".format(merged_magnet_link))
+          for location in torrents_found[torrent_hash]["locations"]:
+              print("  website: {}".format(location["website"]))
+              for key in (print_order - dont_print):
+                  if key in location and location[key] != None:
+                    print("    {}: {}".format(key, location[key]))
+          print("")
 
 
 def CheckWordsInTitle(title, words):
@@ -528,7 +530,8 @@ def SearchBTDig(search_str):
             print("SearchBTDig Exception: {:s}".format(str(ex)))
 
 
-if __name__ == '__main__':
+def main():
+    global search_str
     if (len(sys.argv) <= 1):
         print("Example: \n ./thisExec Stuff to Search")
         exit(0)
