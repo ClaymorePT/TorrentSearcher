@@ -10,7 +10,7 @@ def requirements_file_to_list(fn='requirements.txt'):
 
 setup(
     name='TorrentSearcher',
-    version='1.0.1',
+    version='1.0.2',
     install_requires=requirements_file_to_list(),
     py_modules=['TorrentSearch', 'MagnetParser'],
     entry_points={'console_scripts': ['torrent_searcher = TorrentSearch:main',]},

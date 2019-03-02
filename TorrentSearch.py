@@ -189,34 +189,6 @@ def SearchPirateBay(search_str):
                         "Reason: {:s}".format(str(ex)))
 
 
-# Extratorrent went offline on the 17th of May of 2017
-def SearchExtraTorrent(search_str):
-    search_words = search_str.split(sep=" ")
-    #search_str = "http://extratorrent.cc/rss.xml?type=search&search={:s}".format(search_str.replace(" ", "+"))
-    search_str = "http://extra.to/rss.xml?type=search&search={:s}".format(search_str.replace(" ", "+"))
-    print("Searching in ExtraTorrent.cc -> {:s}".format(search_str))
-    root = etree.XML(requests.get(search_str, headers=headers).content)
-    # print(etree.tostring(root, pretty_print=True).decode())
-    for node in root.findall('.//item'):
-        try:
-            #print(etree.tostring(node, pretty_print=True).decode())
-            torrent_title = node.find('title').text
-            if not CheckWordsInTitle(torrent_title, search_words):
-                continue
-            torrent_details = {
-                "title": torrent_title,
-                "date" : node.find('pubDate').text,
-                "torrent_link": node.find('enclosure').get('url'),
-                "magnet_link": node.find('magnetURI').text,
-                "seeders": node.find('seeders').text,
-                "leechers": node.find('leechers').text,
-                "hash": node.find('info_hash').text.upper()
-            }
-            AddTorrentInfo("http://extratorrent.cc", torrent_details)
-        except Exception as ex:
-            print("SearchExtraTorrent Exception: {:s}".format(str(ex)))
-
-
 #Not Working... website relies on javascript to construct the magnet link
 def SearchZooqle(search_str):
     search_words = search_str.split(sep=" ")
@@ -414,82 +386,6 @@ def SearchBittorrent_am(search_str):
             print("SearchBittorrent_am Exception: {:s}".format(str(ex)))
 
 
-# def SearchTorrentProject_se(search_str):
-#     search_words = search_str.split(sep=" ")
-#     search_str = "https://torrentproject.se/rss/{:s}/".format(search_str.replace(" ", "%20"))
-#
-#     def get_torrent_details(torrent_link):
-#         root = html.fromstring(requests.get(torrent_link).content)
-#         seeders_node = root.xpath('//span[@class="greenish"]')[0]
-#         leechers_node = root.xpath('//span[@class="reddish"]')[0]
-#         magnet_node = root.xpath('//a[contains(@href,"magnet:")]')[0]
-#         return {
-#             "hash": re.findall(magnet_md5_hash_re, magnet_node.get('href'))[0],
-#             "seeders" : re.findall(r"([\d]+)", seeders_node.text)[0],
-#             "leechers": re.findall(r"([\d]+)", leechers_node.text)[0],
-#             "magnet_link": magnet_node.get('href'),
-#         }
-#     print("000")
-#     root = etree.XML(requests.get(search_str).content, etree.XMLParser(ns_clean=True, recover=True, strip_cdata=True))
-#     print("111")
-#     print(etree.tostring(root, pretty_print=True).decode())
-#     for node in root.findall('.//item'):
-#         try:
-#             print(etree.tostring(node, pretty_print=True).decode())
-#             exit(0)
-#             title = node.find('title').text
-#             if sum((word not in title for word in search_words)):
-#                 continue
-#
-#             #details_link = node.find('link').text
-#             torrent_details = {}
-#             #torrent_details = get_torrent_details(details_link)
-#             torrent_details.update({
-#                 "title": title,
-#                 "date": node.find('pubDate').text,
-#                 "torrent_link": node.find('enclosure').get('url'),
-#                 "seeders": node.find('seeds').text,
-#                 "leechers": node.find('leechers').text
-#             })
-#             print(torrent_details)
-#             exit(0)
-#             AddTorrentInfo("https://torrentproject.se", torrent_details)
-#         except Exception as ex:
-#             print("SearchTorrentProject_se Exception: {:s}".format(str(ex)))
-
-
-
-def SearchSkyTorrents_in(search_str):
-    search_words = search_str.split(sep=" ")
-    search_str = "https://www.skytorrents.in/search/all/ad/1/?l=en-us&q={:s}".format(search_str.replace(" ", "+"))
-    print("Searching in SkyTorrents.in -> {:s}".format(search_str))
-
-    root = html.fromstring(requests.get(search_str, headers=headers).content)
-    #print(etree.tostring(root, pretty_print=True).decode())
-    for row in root.xpath('//table[@class="table is-striped table is-narrow"]/tbody/tr'):
-        try:
-            #print(etree.tostring(row, pretty_print=True).decode())
-            res = row.xpath('./td')
-            mgnet_node = res[0].xpath('./a[contains(@href,"magnet:")]')[0]
-            image_title_node = mgnet_node.xpath('./img')[0]
-            torrent_title = image_title_node.get('title')
-            if not CheckWordsInTitle(torrent_title, search_words):
-                continue
-            torrent_details = {
-                'title': torrent_title,
-                "magnet_link": mgnet_node.get("href"),
-                "size": res[1].text,
-                "files": res[2].text,
-                "date": res[3].text,
-                "hash": re.findall(magnet_md5_hash_re, mgnet_node.get("href").upper())[0],
-                "seeders": int(res[4].text),
-                "leechers": int(res[5].text),
-            }
-            AddTorrentInfo("https://www.skytorrents.in", torrent_details)
-        except Exception as ex:
-            print("SearchBittorrent_am Exception: {:s}".format(str(ex)))
-
-
 def SearchBTDig(search_str):
     search_words = search_str.split(sep=" ")
     search_str = "https://btdig.com/search?order=0&q={:s}".format(search_str.replace(" ", "+"))
@@ -539,8 +435,7 @@ def main():
     search_str = " ".join(sys.argv[1:])
     print("Search String: ", search_str)
     active_sites = (SearchPirateBay, SearchBittorrent_am, SearchLimeTorrents, SearchBTDig)
-    # SearchZooqle, SearchMonoNova, SearchLimeTorrents SearchSkyTorrents_in, SearchExtraTorrent
-    #active_sites = (SearchMonoNova,)
+    # SearchZooqle, SearchMonoNova, 
     try:
         futs = []
         for site in active_sites:
